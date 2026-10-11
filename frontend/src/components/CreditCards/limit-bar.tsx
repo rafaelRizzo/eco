@@ -21,9 +21,9 @@ export function LimitBar({ usedCents, limitCents, className }: Props) {
                 aria-label="Limite usado"
             >
                 <motion.div
-                    className={cn("h-full origin-left rounded-full", tone)}
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: ratio }}
+                    className={cn("h-full rounded-full", tone)}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${ratio * 100}%` }}
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 />
             </div>

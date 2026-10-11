@@ -21,6 +21,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppInvestmentsRouteImport } from './routes/_app/investments'
 import { Route as AppProfileRouteImport } from './routes/_app/profile'
 import { Route as AppRecurringRouteImport } from './routes/_app/recurring'
+import { Route as AppSimulatorsRouteImport } from './routes/_app/simulators'
 import { Route as AppTransactionsRouteImport } from './routes/_app/transactions'
 import { Route as AppUsersRouteImport } from './routes/_app/users'
 import { Route as AppCreditCardsIndexRouteImport } from './routes/_app/credit-cards.index'
@@ -85,6 +86,11 @@ const AppRecurringRoute = AppRecurringRouteImport.update({
   path: '/recurring',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSimulatorsRoute = AppSimulatorsRouteImport.update({
+  id: '/simulators',
+  path: '/simulators',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTransactionsRoute = AppTransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/investments': typeof AppInvestmentsRoute
   '/profile': typeof AppProfileRoute
   '/recurring': typeof AppRecurringRoute
+  '/simulators': typeof AppSimulatorsRoute
   '/transactions': typeof AppTransactionsRoute
   '/users': typeof AppUsersRoute
   '/credit-cards/$id': typeof AppCreditCardsIdRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/investments': typeof AppInvestmentsRoute
   '/profile': typeof AppProfileRoute
   '/recurring': typeof AppRecurringRoute
+  '/simulators': typeof AppSimulatorsRoute
   '/transactions': typeof AppTransactionsRoute
   '/users': typeof AppUsersRoute
   '/credit-cards/$id': typeof AppCreditCardsIdRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/_app/investments': typeof AppInvestmentsRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/recurring': typeof AppRecurringRoute
+  '/_app/simulators': typeof AppSimulatorsRoute
   '/_app/transactions': typeof AppTransactionsRoute
   '/_app/users': typeof AppUsersRoute
   '/_app/credit-cards/$id': typeof AppCreditCardsIdRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/profile'
     | '/recurring'
+    | '/simulators'
     | '/transactions'
     | '/users'
     | '/credit-cards/$id'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/profile'
     | '/recurring'
+    | '/simulators'
     | '/transactions'
     | '/users'
     | '/credit-cards/$id'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/_app/investments'
     | '/_app/profile'
     | '/_app/recurring'
+    | '/_app/simulators'
     | '/_app/transactions'
     | '/_app/users'
     | '/_app/credit-cards/$id'
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRecurringRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/simulators': {
+      id: '/_app/simulators'
+      path: '/simulators'
+      fullPath: '/simulators'
+      preLoaderRoute: typeof AppSimulatorsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/transactions': {
       id: '/_app/transactions'
       path: '/transactions'
@@ -359,6 +378,7 @@ interface AppRouteChildren {
   AppInvestmentsRoute: typeof AppInvestmentsRoute
   AppProfileRoute: typeof AppProfileRoute
   AppRecurringRoute: typeof AppRecurringRoute
+  AppSimulatorsRoute: typeof AppSimulatorsRoute
   AppTransactionsRoute: typeof AppTransactionsRoute
   AppUsersRoute: typeof AppUsersRoute
 }
@@ -371,6 +391,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppInvestmentsRoute: AppInvestmentsRoute,
   AppProfileRoute: AppProfileRoute,
   AppRecurringRoute: AppRecurringRoute,
+  AppSimulatorsRoute: AppSimulatorsRoute,
   AppTransactionsRoute: AppTransactionsRoute,
   AppUsersRoute: AppUsersRoute,
 }

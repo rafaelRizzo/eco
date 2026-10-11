@@ -1,7 +1,7 @@
 // Página de investimentos: carteira (posição e alocação), operações de compra/venda e proventos por mês.
 import { createFileRoute } from "@tanstack/react-router"
-import { ArrowLeftRightIcon, LineChartIcon, PlusIcon } from "lucide-react"
-import { useState } from "react"
+import { ArrowLeftRightIcon, LineChartIcon, PlusIcon, SearchIcon } from "lucide-react"
+import { useMemo, useState } from "react"
 import { z } from "zod"
 import { AnimatedMoney } from "@/components/animated-money"
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog"
@@ -15,14 +15,16 @@ import { PriceDialog } from "@/components/Investments/price-dialog"
 import { TradeFormDialog } from "@/components/Investments/trade-form-dialog"
 import { TradesList } from "@/components/Investments/trades-list"
 import { Money } from "@/components/money"
+import { OptionSelect } from "@/components/option-select"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { type AssetTrade, useAssetTrades } from "@/hooks/use-asset-trades"
 import { useAccounts } from "@/hooks/use-accounts"
-import { type Asset, toAssetPayload, useAssets } from "@/hooks/use-assets"
+import { type Asset, assetClassLabels, toAssetPayload, useAssets } from "@/hooks/use-assets"
 import { type Dividend, useDividends, useDividendsDue } from "@/hooks/use-dividends"
 import { currentMonthKey, formatDate } from "@/lib/format"
 
@@ -43,6 +45,8 @@ export const Route = createFileRoute("/_app/investments")({
 
 type Tab = "portfolio" | "trades" | "dividends"
 
+const classOptions = Object.entries(assetClassLabels).map(([value, label]) => ({ value, label }))
+
 function InvestmentsPage() {
     const search = Route.useSearch()
     const navigate = Route.useNavigate()
@@ -54,6 +58,15 @@ function InvestmentsPage() {
     const { createDividend, updateDividend, deleteDividend } = useDividends(month)
     const { accounts } = useAccounts()
     const { dueCount, dueCents } = useDividendsDue()
+
+    const [assetSearch, setAssetSearch] = useState("")
+    const [assetClass, setAssetClass] = useState<string | null>(null)
+    const filteredAssets = useMemo(() => {
+        const term = assetSearch.trim().toLowerCase()
+        return assets.filter(
+            (asset) => (!assetClass || asset.class === assetClass) && (!term || asset.ticker.toLowerCase().includes(term)),
+        )
+    }, [assets, assetSearch, assetClass])
 
     const [assetFormOpen, setAssetFormOpen] = useState(false)
     const [editingAsset, setEditingAsset] = useState<Asset | null>(null)
@@ -178,16 +191,48 @@ function InvestmentsPage() {
                                 <Money cents={summary.profitCents} tone="signed" className="text-lg sm:text-xl" />
                             </div>
                         </div>
-                        <AssetsList
-                            assets={assets}
-                            onTrade={(asset) => openTrade(asset.id)}
-                            onPrice={setPricingAsset}
-                            onEdit={(asset) => {
-                                setEditingAsset(asset)
-                                setAssetFormOpen(true)
-                            }}
-                            onDelete={setDeletingAsset}
-                        />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <div className="relative sm:w-64">
+                                <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    value={assetSearch}
+                                    onChange={(event) => setAssetSearch(event.target.value)}
+                                    placeholder="Buscar ativo"
+                                    aria-label="Buscar ativo"
+                                    className="pl-8"
+                                />
+                            </div>
+                            <div className="sm:w-44">
+                                <OptionSelect
+                                    options={classOptions}
+                                    value={assetClass}
+                                    onChange={setAssetClass}
+                                    emptyLabel="Todas as classes"
+                                />
+                            </div>
+                        </div>
+                        {filteredAssets.length === 0 ? (
+                            <Empty className="border border-dashed">
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon">
+                                        <SearchIcon />
+                                    </EmptyMedia>
+                                    <EmptyTitle>Nenhum ativo encontrado</EmptyTitle>
+                                    <EmptyDescription>Ajuste a busca ou a classe pra ver os ativos da carteira.</EmptyDescription>
+                                </EmptyHeader>
+                            </Empty>
+                        ) : (
+                            <AssetsList
+                                assets={filteredAssets}
+                                onTrade={(asset) => openTrade(asset.id)}
+                                onPrice={setPricingAsset}
+                                onEdit={(asset) => {
+                                    setEditingAsset(asset)
+                                    setAssetFormOpen(true)
+                                }}
+                                onDelete={setDeletingAsset}
+                            />
+                        )}
                         <section className="rounded-2xl border bg-card p-4">
                             <h2 className="mb-4 font-heading font-medium text-sm">Alocação por classe</h2>
                             <AllocationChart byClass={summary.byClass} />

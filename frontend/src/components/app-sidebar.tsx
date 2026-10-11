@@ -3,6 +3,7 @@
 import { Link, useLocation } from "@tanstack/react-router"
 import {
     ArrowLeftRightIcon,
+    CalculatorIcon,
     CreditCardIcon,
     LayoutDashboardIcon,
     LineChartIcon,
@@ -32,7 +33,7 @@ import {
 import { UserAvatar } from "@/components/user-avatar"
 
 type NavItem = {
-    to: "/dashboard" | "/transactions" | "/accounts" | "/credit-cards" | "/recurring" | "/categories" | "/investments" | "/users"
+    to: "/dashboard" | "/transactions" | "/accounts" | "/credit-cards" | "/recurring" | "/categories" | "/investments" | "/simulators" | "/users"
     label: string
     icon: typeof WalletIcon
 }
@@ -53,6 +54,7 @@ const NAV_GROUPS: NavGroup[] = [
             { to: "/recurring", label: "Recorrências", icon: RepeatIcon },
             { to: "/categories", label: "Categorias", icon: TagsIcon },
             { to: "/investments", label: "Investimentos", icon: LineChartIcon },
+            { to: "/simulators", label: "Simuladores", icon: CalculatorIcon },
         ],
     },
 ]

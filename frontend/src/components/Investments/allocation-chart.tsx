@@ -23,11 +23,12 @@ export function AllocationChart({ byClass }: Props) {
                             {row.percent.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%
                         </span>
                     </div>
-                    <div className="h-2.5 overflow-hidden rounded-r-[4px] bg-muted">
+                    <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                        {/* width (não scaleX): escalar achata o arredondamento e cria um degrau na ponta. */}
                         <motion.div
-                            className="h-full origin-left rounded-r-[4px] bg-chart-income"
-                            initial={{ scaleX: 0 }}
-                            animate={{ scaleX: row.valueCents / max }}
+                            className="h-full min-w-2 rounded-full bg-chart-income"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(row.valueCents / max) * 100}%` }}
                             transition={{ delay: 0.15 + index * 0.06, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                         />
                     </div>
