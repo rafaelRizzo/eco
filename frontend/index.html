@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#0a0a0a" />
+        <title>Eco, controle de gastos</title>
+        <script>
+            // Aplica o tema salvo antes do primeiro paint (sem isso a tela pisca clara até o React montar).
+            // Mesma chave e mesmo padrão (escuro) do ThemeProvider.
+            ;(function () {
+                var theme = "dark"
+                try {
+                    if (localStorage.getItem("eco.theme") === "light") theme = "light"
+                } catch (e) {}
+                document.documentElement.classList.toggle("dark", theme === "dark")
+                document.querySelector('meta[name="theme-color"]').setAttribute("content", theme === "dark" ? "#0a0a0a" : "#f5f5f5")
+            })()
+        </script>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.tsx"></script>
+    </body>
+</html>

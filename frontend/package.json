@@ -1,0 +1,49 @@
+{
+    "name": "eco-frontend",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "tsc -b && vite build",
+        "preview": "vite preview",
+        "typecheck": "tsc -b",
+        "lint": "biome check .",
+        "format": "biome check --write ."
+    },
+    "dependencies": {
+        "@base-ui/react": "^1.9.0",
+        "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+        "@fontsource-variable/figtree": "^5.3.0",
+        "@fontsource/ibm-plex-mono": "^5.3.0",
+        "@hookform/resolvers": "^5.9.1",
+        "@tailwindcss/vite": "^4.3.3",
+        "@tanstack/react-query": "^5.104.1",
+        "@tanstack/react-router": "^1.170.41",
+        "axios": "^1.20.0",
+        "class-variance-authority": "^0.7.1",
+        "cn": "^0.4.0",
+        "date-fns": "^4.4.0",
+        "lucide-react": "^1.54.0",
+        "motion": "^14.0.0",
+        "react": "^19.3.0",
+        "react-day-picker": "^10.0.2",
+        "react-dom": "^19.3.0",
+        "react-hook-form": "^7.89.0",
+        "shadcn": "^4.21.4",
+        "sonner": "^2.0.8",
+        "tailwindcss": "^4.3.3",
+        "tw-animate-css": "^1.4.0",
+        "zod": "^4.6.5"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.5.15",
+        "@tanstack/router-plugin": "^1.168.42",
+        "@types/node": "^26.6.4",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "@vitejs/plugin-react": "^6.1.2",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.4"
+    }
+}
