@@ -48,5 +48,5 @@ export const dividendKindValues = ["dividend", "jcp", "yield", "other"] as const
 export const dividendKind = pgEnum("dividend_kind", dividendKindValues)
 
 // Cadência de pagamento de proventos do ativo; `none` = sem recorrência (só aparece o que for lançado).
-export const dividendFrequencyValues = ["none", "monthly", "quarterly", "semiannual", "annual"] as const
+export const dividendFrequencyValues = ["none", "monthly", "bimonthly", "quarterly", "semiannual", "annual"] as const
 export const dividendFrequency = pgEnum("dividend_frequency", dividendFrequencyValues)

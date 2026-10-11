@@ -1,0 +1,1 @@
+ALTER TYPE "public"."dividend_frequency" ADD VALUE 'bimonthly' BEFORE 'quarterly';

@@ -71,6 +71,13 @@
       "when": 1791679554650,
       "tag": "0009_revoked_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791742212234,
+      "tag": "0010_dividend_frequency_bimonthly",
+      "breakpoints": true
     }
   ]
 }

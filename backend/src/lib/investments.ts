@@ -77,12 +77,13 @@ export const summarizePortfolio = <C extends string>(items: { class: C; valueCen
     return { totalValueCents, totalCostCents, profitCents: totalValueCents - totalCostCents, byClass }
 }
 
-export type DividendFrequency = "none" | "monthly" | "quarterly" | "semiannual" | "annual"
+export type DividendFrequency = "none" | "monthly" | "bimonthly" | "quarterly" | "semiannual" | "annual"
 
 // Meses entre um pagamento e o seguinte; `none` não projeta nada.
 export const FREQUENCY_STEP: Record<DividendFrequency, number> = {
     none: 0,
     monthly: 1,
+    bimonthly: 2,
     quarterly: 3,
     semiannual: 6,
     annual: 12,

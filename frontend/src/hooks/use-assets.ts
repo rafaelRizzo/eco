@@ -15,11 +15,12 @@ export const assetClassLabels: Record<AssetClass, string> = {
     other: "Outro",
 }
 
-export type DividendFrequency = "none" | "monthly" | "quarterly" | "semiannual" | "annual"
+export type DividendFrequency = "none" | "monthly" | "bimonthly" | "quarterly" | "semiannual" | "annual"
 
 export const dividendFrequencyLabels: Record<DividendFrequency, string> = {
     none: "Sem recorrência",
     monthly: "Mensal",
+    bimonthly: "Bimestral",
     quarterly: "Trimestral",
     semiannual: "Semestral",
     annual: "Anual",
@@ -58,7 +59,7 @@ export type PortfolioSummary = {
 export const assetFormSchema = z.object({
     ticker: z.string().trim().min(1, "Informe o ticker").max(20),
     class: z.enum(["stock", "reit", "crypto", "currency", "other"]),
-    dividendFrequency: z.enum(["none", "monthly", "quarterly", "semiannual", "annual"]),
+    dividendFrequency: z.enum(["none", "monthly", "bimonthly", "quarterly", "semiannual", "annual"]),
     // Texto (aceita vírgula, até 6 casas); vazio = não informado.
     dividendPerUnit: z
         .string()

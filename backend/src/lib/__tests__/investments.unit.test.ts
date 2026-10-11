@@ -122,6 +122,12 @@ describe("projectDividends", () => {
         expect(projectDividends([monthly], recorded, months, today).map((e) => e.payDate)[0]).toBe("2026-11-14")
     })
 
+    it("bimestral: só projeta de 2 em 2 meses a partir do último pagamento", () => {
+        const bimonthly = { id: "a4", frequency: "bimonthly" as const, quantity: 100 }
+        const recorded = [{ assetId: "a4", payDate: "2026-10-10", totalCents: 2000, quantity: 100 }]
+        expect(projectDividends([bimonthly], recorded, ["2026-11", "2026-12", "2027-01"], today).map((e) => e.payDate)).toEqual(["2026-12-10"])
+    })
+
     it("trimestral: só projeta de 3 em 3 meses a partir do último pagamento", () => {
         const quarterly = { id: "a2", frequency: "quarterly" as const, quantity: 100 }
         const recorded = [{ assetId: "a2", payDate: "2026-09-20", totalCents: 3000, quantity: 100 }]
