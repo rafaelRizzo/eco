@@ -1,0 +1,47 @@
+{
+    "name": "eco-backend",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "bun --watch src/main.ts",
+        "start": "bun src/main.ts",
+        "build": "bun build src/main.ts --target bun --outdir dist",
+        "typecheck": "tsc --noEmit",
+        "lint": "biome check .",
+        "format": "biome check --write .",
+        "test": "bun test",
+        "test:unit": "LOG_ENABLED=false bun test unit.test",
+        "test:integration": "bun test routes.test",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "bun src/db/migrate.ts",
+        "db:studio": "drizzle-kit studio",
+        "job": "bun src/jobs/cli.ts"
+    },
+    "dependencies": {
+        "@fastify/cors": "^11.3.1",
+        "@fastify/helmet": "^13.1.2",
+        "@fastify/rate-limit": "^11.2.1",
+        "@fastify/swagger": "^9.9.2",
+        "@paralleldrive/cuid2": "^3.3.0",
+        "@scalar/fastify-api-reference": "^1.73.1",
+        "argon2": "^0.45.1",
+        "croner": "^10.0.1",
+        "drizzle-orm": "^0.45.4",
+        "fastify": "^5.12.5",
+        "fastify-type-provider-zod": "^7.0.0",
+        "jsonwebtoken": "^9.0.3",
+        "pino": "^10.4.0",
+        "postgres": "^3.4.9",
+        "sharp": "^0.35.5",
+        "zod": "^4.6.5"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.5.15",
+        "@types/bun": "^1.4.2",
+        "@types/jsonwebtoken": "^9.0.10",
+        "drizzle-kit": "^0.31.11",
+        "pino-pretty": "^13.2.0",
+        "typescript": "^7.0.2"
+    }
+}

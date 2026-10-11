@@ -1,0 +1,2 @@
+ALTER TABLE "user_avatars" ADD CONSTRAINT "user_avatars_content_type_check" CHECK ("user_avatars"."content_type" = 'image/webp');--> statement-breakpoint
+ALTER TABLE "user_avatars" ADD CONSTRAINT "user_avatars_data_size_check" CHECK (octet_length("user_avatars"."data") between 1 and 524288);
