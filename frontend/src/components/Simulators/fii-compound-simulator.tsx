@@ -7,6 +7,7 @@ import { Money } from "@/components/money"
 import { GrowthChart } from "@/components/Simulators/growth-chart"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { type RatePeriod, simulateCompoundInterest } from "@/lib/compound-interest"
 
@@ -32,11 +33,11 @@ export function FiiCompoundSimulator() {
     const [monthlyCents, setMonthlyCents] = useState(100_000)
     const [rate, setRate] = useState("0,8")
     const [ratePeriod, setRatePeriod] = useState<RatePeriod>("monthly")
-    const [reinvest, setReinvest] = useState("100")
+    const [reinvest, setReinvest] = useState(true)
     const [yearsText, setYearsText] = useState("10")
 
     const ratePercent = parseDecimal(rate)
-    const reinvestPercent = clamp(parseDecimal(reinvest), 0, 100)
+    const reinvestPercent = reinvest ? 100 : 0
     const years = clamp(Math.floor(parseDecimal(yearsText)), 0, MAX_YEARS)
 
     const result = useMemo(
@@ -81,18 +82,14 @@ export function FiiCompoundSimulator() {
                         </p>
                     ) : null}
                 </div>
-                <div className="space-y-1.5">
-                    <Label htmlFor="sim-reinvest">Proventos reinvestidos (%)</Label>
-                    <Input
-                        id="sim-reinvest"
-                        inputMode="decimal"
-                        autoComplete="off"
-                        className="money text-right"
-                        value={reinvest}
-                        onChange={(event) => setReinvest(event.target.value.replace(/[^\d.,]/g, ""))}
-                        aria-invalid={parseDecimal(reinvest) > 100 || undefined}
-                    />
-                    <p className="text-muted-foreground text-xs">100% = tudo volta pra carteira; 0% = você gasta os proventos.</p>
+                <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                        <Label htmlFor="sim-reinvest">Reinvestir proventos</Label>
+                        <p className="text-muted-foreground text-xs">
+                            {reinvest ? "Todo provento compra mais cotas." : "Você gasta os proventos, a carteira só cresce com os aportes."}
+                        </p>
+                    </div>
+                    <Switch id="sim-reinvest" checked={reinvest} onCheckedChange={setReinvest} className="mt-0.5" />
                 </div>
                 <div className="space-y-1.5">
                     <Label htmlFor="sim-years">Prazo (anos)</Label>
@@ -116,22 +113,23 @@ export function FiiCompoundSimulator() {
                     </p>
                 ) : (
                     <>
-                        <div className="grid grid-cols-2 gap-3 rounded-2xl border bg-card p-4 xl:grid-cols-4">
-                            <div>
+                        {/* auto-fit: quebra de linha em vez de sobrepor quando o valor é grande (taxa alta, prazo longo). */}
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-3 rounded-2xl border bg-card p-4">
+                            <div className="min-w-0">
                                 <p className="text-muted-foreground text-xs">Patrimônio final</p>
-                                <AnimatedMoney cents={result.balanceCents} className="text-lg sm:text-xl" />
+                                <AnimatedMoney cents={result.balanceCents} className="text-lg" />
                             </div>
-                            <div>
+                            <div className="min-w-0">
                                 <p className="text-muted-foreground text-xs">Total investido</p>
-                                <AnimatedMoney cents={result.investedCents} className="text-lg sm:text-xl" />
+                                <AnimatedMoney cents={result.investedCents} className="text-lg" />
                             </div>
-                            <div>
+                            <div className="min-w-0">
                                 <p className="text-muted-foreground text-xs">Rendimento</p>
-                                <Money cents={gainCents} tone="income" className="text-lg sm:text-xl" />
+                                <Money cents={gainCents} tone="income" className="text-lg" />
                             </div>
-                            <div>
+                            <div className="min-w-0">
                                 <p className="text-muted-foreground text-xs">Renda mensal no fim</p>
-                                <AnimatedMoney cents={result.monthlyIncomeCents} className="text-lg sm:text-xl" />
+                                <AnimatedMoney cents={result.monthlyIncomeCents} className="text-lg" />
                             </div>
                         </div>
 
