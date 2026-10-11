@@ -12,6 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { type RatePeriod, simulateCompoundInterest } from "@/lib/compound-interest"
 
 const MAX_YEARS = 50
+// Tetos realistas pra FII: yield acima disso estoura o cálculo sem representar nada útil.
+const MAX_RATE: Record<RatePeriod, number> = { monthly: 5, yearly: 60 }
+const MAX_MONEY_CENTS = 10_000_000_00
 
 const PERIOD_OPTIONS = [
     { value: "monthly", label: "ao mês" },
@@ -22,6 +25,14 @@ const PERIOD_OPTIONS = [
 const parseDecimal = (text: string) => {
     const value = Number(text.replace(",", "."))
     return Number.isFinite(value) && value >= 0 ? value : 0
+}
+
+// Mantém só dígitos, um separador e 2 casas decimais; acima do teto, trava no teto.
+const sanitizeRate = (text: string, max: number) => {
+    const [int = "", ...rest] = text.replace(/[^\d.,]/g, "").split(/[.,]/)
+    const decimals = rest.join("").slice(0, 2)
+    const cleaned = text.match(/[.,]/) ? `${int.slice(0, 2)},${decimals}` : int.slice(0, 2)
+    return parseDecimal(cleaned) > max ? String(max).replace(".", ",") : cleaned
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
@@ -53,11 +64,11 @@ export function FiiCompoundSimulator() {
                 <h2 className="font-heading font-medium text-sm">Parâmetros</h2>
                 <div className="space-y-1.5">
                     <Label htmlFor="sim-initial">Aporte inicial</Label>
-                    <MoneyInput id="sim-initial" value={initialCents} onChange={setInitialCents} />
+                    <MoneyInput id="sim-initial" value={initialCents} onChange={(cents) => setInitialCents(Math.min(cents, MAX_MONEY_CENTS))} />
                 </div>
                 <div className="space-y-1.5">
                     <Label htmlFor="sim-monthly">Aporte mensal</Label>
-                    <MoneyInput id="sim-monthly" value={monthlyCents} onChange={setMonthlyCents} />
+                    <MoneyInput id="sim-monthly" value={monthlyCents} onChange={(cents) => setMonthlyCents(Math.min(cents, MAX_MONEY_CENTS))} />
                 </div>
                 <div className="space-y-1.5">
                     <Label htmlFor="sim-rate">Taxa de juros (yield dos proventos)</Label>
@@ -68,14 +79,19 @@ export function FiiCompoundSimulator() {
                             autoComplete="off"
                             className="money text-right"
                             value={rate}
-                            onChange={(event) => setRate(event.target.value.replace(/[^\d.,]/g, ""))}
+                            onChange={(event) => setRate(sanitizeRate(event.target.value, MAX_RATE[ratePeriod]))}
                         />
                         <OptionSelect
                             options={PERIOD_OPTIONS}
                             value={ratePeriod}
-                            onChange={(value) => setRatePeriod((value as RatePeriod) ?? "monthly")}
+                            onChange={(value) => {
+                                const next = (value as RatePeriod) ?? "monthly"
+                                setRatePeriod(next)
+                                setRate((current) => sanitizeRate(current, MAX_RATE[next]))
+                            }}
                         />
                     </div>
+                    <p className="text-muted-foreground text-xs">Máximo de {MAX_RATE[ratePeriod]}% {ratePeriod === "monthly" ? "ao mês" : "ao ano"}.</p>
                     {ratePeriod === "yearly" && ratePercent > 0 ? (
                         <p className="text-muted-foreground text-xs">
                             Equivale a {formatPercent(result.monthlyRatePercent)} ao mês (composto).
@@ -99,8 +115,10 @@ export function FiiCompoundSimulator() {
                         autoComplete="off"
                         className="money text-right"
                         value={yearsText}
-                        onChange={(event) => setYearsText(event.target.value.replace(/\D/g, ""))}
-                        aria-invalid={Number(yearsText) > MAX_YEARS || undefined}
+                        onChange={(event) => {
+                            const digits = event.target.value.replace(/\D/g, "").slice(0, 2)
+                            setYearsText(digits && Number(digits) > MAX_YEARS ? String(MAX_YEARS) : digits)
+                        }}
                     />
                     <p className="text-muted-foreground text-xs">De 1 a {MAX_YEARS} anos.</p>
                 </div>
@@ -117,19 +135,27 @@ export function FiiCompoundSimulator() {
                         <div className="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-3 rounded-2xl border bg-card p-4">
                             <div className="min-w-0">
                                 <p className="text-muted-foreground text-xs">Patrimônio final</p>
-                                <AnimatedMoney cents={result.balanceCents} className="text-lg" />
+                                <div className="truncate">
+                                    <AnimatedMoney cents={result.balanceCents} className="text-lg" />
+                                </div>
                             </div>
                             <div className="min-w-0">
                                 <p className="text-muted-foreground text-xs">Total investido</p>
-                                <AnimatedMoney cents={result.investedCents} className="text-lg" />
+                                <div className="truncate">
+                                    <AnimatedMoney cents={result.investedCents} className="text-lg" />
+                                </div>
                             </div>
                             <div className="min-w-0">
                                 <p className="text-muted-foreground text-xs">Rendimento</p>
-                                <Money cents={gainCents} tone="income" className="text-lg" />
+                                <div className="truncate">
+                                    <Money cents={gainCents} tone="income" className="text-lg" />
+                                </div>
                             </div>
                             <div className="min-w-0">
                                 <p className="text-muted-foreground text-xs">Renda mensal no fim</p>
-                                <AnimatedMoney cents={result.monthlyIncomeCents} className="text-lg" />
+                                <div className="truncate">
+                                    <AnimatedMoney cents={result.monthlyIncomeCents} className="text-lg" />
+                                </div>
                             </div>
                         </div>
 
