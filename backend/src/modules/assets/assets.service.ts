@@ -1,6 +1,7 @@
 // Regras de ativos: posição e preço médio vêm das operações (asset_trades), calculados na leitura.
 import { and, asc, count, eq, inArray } from "drizzle-orm"
 import { assetTrades, assets, dividends, transactions } from "../../db/schema"
+import { cached } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { env } from "../../env"
 import { todayIn } from "../../lib/dates"
@@ -69,10 +70,11 @@ export const listAssetViews = async (userId: string, assetId?: string, executor:
     return rows.map((row) => toView(row, byAsset.get(row.id) ?? []))
 }
 
-export const listAssets = async (userId: string) => {
-    const views = await listAssetViews(userId)
-    return { assets: views, summary: summarizePortfolio(views) }
-}
+export const listAssets = (userId: string) =>
+    cached(userId, "assets", "all", async () => {
+        const views = await listAssetViews(userId)
+        return { assets: views, summary: summarizePortfolio(views) }
+    })
 
 const getAssetView = async (userId: string, assetId: string) => {
     const [view] = await listAssetViews(userId, assetId)

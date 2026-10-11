@@ -1,7 +1,8 @@
 // Regras de contas: saldo = inicial + receitas pagas - despesas pagas - faturas pagas a partir da conta.
-// Sem cache no MVP (ver CLAUDE.md do backend): leitura direto no Postgres.
+// Leituras passam pelo cache Redis opcional (lib/cache.ts); sem REDIS_URL vão direto pro Postgres.
 import { and, eq, inArray, sql } from "drizzle-orm"
 import { accounts, invoices, transactions } from "../../db/schema"
+import { cached } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import type { CreateAccountInput, UpdateAccountInput } from "./schemas/account.schema"
@@ -54,16 +55,17 @@ const withBalance = async (row: AccountRow) => {
     return result!
 }
 
-export const listAccounts = async (userId: string) => {
-    const rows = await db.query.accounts.findMany({
-        where: eq(accounts.userId, userId),
-        orderBy: (table, { asc }) => [asc(table.name)],
+export const listAccounts = (userId: string) =>
+    cached(userId, "accounts", "all", async () => {
+        const rows = await db.query.accounts.findMany({
+            where: eq(accounts.userId, userId),
+            orderBy: (table, { asc }) => [asc(table.name)],
+        })
+        return computeBalances(rows)
     })
-    return computeBalances(rows)
-}
 
-export const getAccount = async (userId: string, accountId: string) =>
-    withBalance(await findOwnedAccount(userId, accountId))
+export const getAccount = (userId: string, accountId: string) =>
+    cached(userId, "account", accountId, async () => withBalance(await findOwnedAccount(userId, accountId)))
 
 export const createAccount = async (userId: string, input: CreateAccountInput) => {
     const [account] = await db

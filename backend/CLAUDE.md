@@ -42,7 +42,7 @@ drizzle/                 # migrations SQL versionadas
 - Input em `.schema.ts`, output em `.response.ts`. Zod 4: `z.email()`, `z.iso.date()`, `z.enum(values)`, `.pipe()` pra trim+formato.
 - **Dinheiro sempre em centavos inteiros** (`*Cents`). Data sem hora = string `YYYY-MM-DD` (coluna `date` mode string); "hoje" = `todayIn(env.APP_TIMEZONE)`.
 - Dentro de `db.transaction(async (tx) => ...)` passe `tx` pra toda função chamada (parâmetro `executor: DbOrTx`), nunca `db`.
-- Sem cache/Redis no MVP (desvio consciente do padrão `sdk-bun-drizzle-scalar`): leitura direto no Postgres. Rate limit do login é em memória (por réplica).
+- Cache Redis **opcional** (`REDIS_URL`, cliente nativo do Bun em `lib/redis.ts`; `lib/cache.ts` com `cached(userId, name, params, loader)`). Fail-open: erro/ausência de Redis cai no Postgres. Invalidação por versão por usuário: hook `onSend` em `server.ts` incrementa o contador após toda escrita autenticada com sucesso; os crons (`job-runner`) invalidam tudo via contador global; `CACHE_TTL_SECONDS` padrão 1h. Timestamps ISO voltam como `Date` (reviver em `cache.ts`). Cacheie só funções de leitura chamadas por GET, nunca as usadas em caminho de escrita (ex: `listAssetViews`); resultado que depende de "hoje" leva a data na chave. Hoje cacheado: `/reports/summary`, `/reports/upcoming`, `/accounts` (+ `:id`), `/credit-cards` (+ `:id`), `/invoices` (+ `:id`), `/assets`, `/dividends` e `/dividends/upcoming`. Rate limit do login é em memória (por réplica).
 
 ## Bootstrap e papéis
 

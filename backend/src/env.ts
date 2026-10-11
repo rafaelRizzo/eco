@@ -16,6 +16,13 @@ const envSchema = z.object({
     LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
     DATABASE_URL: z.url(),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
+    // Opcional: sem REDIS_URL o cache fica desligado. Ex: redis://:senha@host:6379 (rediss:// pra TLS).
+    REDIS_URL: z
+        .string()
+        .regex(/^(redis|rediss|valkey|valkeys):\/\//, "REDIS_URL precisa começar com redis:// ou rediss://")
+        .optional(),
+    // TTL das entradas de cache. Escritas via API e crons invalidam na hora.
+    CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(86400).default(3600),
     JWT_SECRET: z
         .string()
         .min(32, "JWT_SECRET precisa ter ao menos 32 caracteres")

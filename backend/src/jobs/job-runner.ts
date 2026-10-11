@@ -2,6 +2,7 @@
 // só uma executa cada janela. Janela com status failed (ou running travado há mais de 1h) pode ser retomada.
 import { sql } from "drizzle-orm"
 import { jobRuns } from "../db/schema"
+import { invalidateAllCache } from "../lib/cache"
 import { db } from "../lib/db"
 import { logger } from "../lib/logger"
 
@@ -41,6 +42,7 @@ export const runJob = async (job: JobDefinition, ctx: JobContext) => {
 
     try {
         const result = await job.run(ctx)
+        await invalidateAllCache()
         await db
             .update(jobRuns)
             .set({ status: "success", finishedAt: new Date(), result })
@@ -53,6 +55,7 @@ export const runJob = async (job: JobDefinition, ctx: JobContext) => {
             .update(jobRuns)
             .set({ status: "failed", finishedAt: new Date(), error: message })
             .where(sql`${jobRuns.id} = ${runId}`)
+        await invalidateAllCache() // falha pode ter deixado escrita parcial
         logger.error({ event: "job_failed", job: job.name, runKey: ctx.runKey, err: error })
         return { status: "failed" as const, error: message }
     }

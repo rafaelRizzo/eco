@@ -4,13 +4,18 @@ import { and, asc, eq, gte, inArray, isNull, lte, ne, sql } from "drizzle-orm"
 import { categories, invoices, transactions } from "../../db/schema"
 import { env } from "../../env"
 import { addDays, monthRange, toMonthKey, todayIn } from "../../lib/dates"
+import { cached } from "../../lib/cache"
 import { db } from "../../lib/db"
 import { listAccounts } from "../accounts/accounts.service"
 import { computeInvoiceTotals } from "../invoices/invoices.service"
 import type { SummaryQuery, UpcomingQuery } from "./schemas/report.schema"
 
-export const getMonthlySummary = async (userId: string, query: SummaryQuery) => {
+export const getMonthlySummary = (userId: string, query: SummaryQuery) => {
     const month = query.month ?? toMonthKey(todayIn(env.APP_TIMEZONE))
+    return cached(userId, "summary", month, () => computeMonthlySummary(userId, month))
+}
+
+const computeMonthlySummary = async (userId: string, month: string) => {
     const { start, end } = monthRange(month)
     const inMonth = and(eq(transactions.userId, userId), gte(transactions.date, start), lte(transactions.date, end))
 
@@ -55,7 +60,10 @@ export const getMonthlySummary = async (userId: string, query: SummaryQuery) => 
     }
 }
 
-export const getUpcoming = async (userId: string, query: UpcomingQuery) => {
+export const getUpcoming = (userId: string, query: UpcomingQuery) =>
+    cached(userId, "upcoming", `${query.days}:${todayIn(env.APP_TIMEZONE)}`, () => computeUpcoming(userId, query))
+
+const computeUpcoming = async (userId: string, query: UpcomingQuery) => {
     const until = addDays(todayIn(env.APP_TIMEZONE), query.days)
 
     const [bills, openInvoices] = await Promise.all([

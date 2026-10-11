@@ -1,6 +1,7 @@
 // Regras de proventos: recebido (pagamento até hoje), a receber (lançado) e estimado (pela recorrência do ativo).
 import { and, between, eq } from "drizzle-orm"
 import { dividends, transactions } from "../../db/schema"
+import { cached } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { addMonths, monthRange, parseDate, shiftMonth, toMonthKey, todayIn } from "../../lib/dates"
 import { AppError } from "../../lib/errors"
@@ -148,23 +149,27 @@ const computeMonths = async (userId: string, monthKeys: string[], today: string)
     })
 }
 
-export const listMonth = async (userId: string, month?: string) => {
+export const listMonth = (userId: string, month?: string) => {
     const today = todayIn(env.APP_TIMEZONE)
     const key = month ?? toMonthKey(today)
-    const [result] = await computeMonths(userId, [key], today)
-    return { month: key, dividends: result!.items, totals: result!.totals }
+    return cached(userId, "dividends-month", `${key}:${today}`, async () => {
+        const [result] = await computeMonths(userId, [key], today)
+        return { month: key, dividends: result!.items, totals: result!.totals }
+    })
 }
 
 // Resumo do mês atual em diante (cards "Este mês" / "Próximo mês").
-export const listUpcoming = async (userId: string, months: number) => {
+export const listUpcoming = (userId: string, months: number) => {
     const today = todayIn(env.APP_TIMEZONE)
-    const { year, month } = parseDate(today)
-    const keys = Array.from({ length: months }, (_, index) => {
-        const target = shiftMonth(year, month, index)
-        return monthKeyFrom(target.year, target.month)
+    return cached(userId, "dividends-upcoming", `${months}:${today}`, async () => {
+        const { year, month } = parseDate(today)
+        const keys = Array.from({ length: months }, (_, index) => {
+            const target = shiftMonth(year, month, index)
+            return monthKeyFrom(target.year, target.month)
+        })
+        const result = await computeMonths(userId, keys, today)
+        return result.map(({ month: key, totals }) => ({ month: key, ...totals }))
     })
-    const result = await computeMonths(userId, keys, today)
-    return result.map(({ month: key, totals }) => ({ month: key, ...totals }))
 }
 
 const findOwnedDividend = async (userId: string, dividendId: string) => {

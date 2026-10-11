@@ -1,6 +1,7 @@
 // Regras de cartões: CRUD escopado por usuário + cálculo de limite usado/disponível.
 import { and, eq, inArray, ne, sql } from "drizzle-orm"
 import { creditCards, invoices, transactions } from "../../db/schema"
+import { cached } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import { findOwnedAccount } from "../accounts/accounts.service"
@@ -43,18 +44,20 @@ const withLimits = async (rows: CreditCardRow[]) => {
     })
 }
 
-export const listCreditCards = async (userId: string) => {
-    const rows = await db.query.creditCards.findMany({
-        where: eq(creditCards.userId, userId),
-        orderBy: (table, { asc }) => [asc(table.name)],
+export const listCreditCards = (userId: string) =>
+    cached(userId, "credit-cards", "all", async () => {
+        const rows = await db.query.creditCards.findMany({
+            where: eq(creditCards.userId, userId),
+            orderBy: (table, { asc }) => [asc(table.name)],
+        })
+        return withLimits(rows)
     })
-    return withLimits(rows)
-}
 
-export const getCreditCard = async (userId: string, creditCardId: string) => {
-    const [creditCard] = await withLimits([await findOwnedCreditCard(userId, creditCardId)])
-    return creditCard!
-}
+export const getCreditCard = (userId: string, creditCardId: string) =>
+    cached(userId, "credit-card", creditCardId, async () => {
+        const [creditCard] = await withLimits([await findOwnedCreditCard(userId, creditCardId)])
+        return creditCard!
+    })
 
 export const createCreditCard = async (userId: string, input: CreateCreditCardInput) => {
     if (input.paymentAccountId) await findOwnedAccount(userId, input.paymentAccountId)

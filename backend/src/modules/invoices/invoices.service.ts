@@ -2,6 +2,7 @@
 import { and, eq, inArray } from "drizzle-orm"
 import { type CreditCard, type Invoice, invoices, transactions } from "../../db/schema"
 import { resolveInvoiceCycle } from "../../lib/billing"
+import { cached } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import { findOwnedAccount } from "../accounts/accounts.service"
@@ -54,27 +55,29 @@ const withTotals = async (rows: Invoice[]) => {
     return rows.map((row) => ({ ...row, totalCents: totals.get(row.id) ?? 0 }))
 }
 
-export const listInvoices = async (userId: string, query: InvoiceQuery) => {
-    const rows = await db.query.invoices.findMany({
-        where: and(
-            eq(invoices.userId, userId),
-            query.creditCardId ? eq(invoices.creditCardId, query.creditCardId) : undefined,
-            query.status ? eq(invoices.status, query.status) : undefined,
-        ),
-        orderBy: (table, { desc }) => [desc(table.dueDate)],
+export const listInvoices = (userId: string, query: InvoiceQuery) =>
+    cached(userId, "invoices", JSON.stringify(query), async () => {
+        const rows = await db.query.invoices.findMany({
+            where: and(
+                eq(invoices.userId, userId),
+                query.creditCardId ? eq(invoices.creditCardId, query.creditCardId) : undefined,
+                query.status ? eq(invoices.status, query.status) : undefined,
+            ),
+            orderBy: (table, { desc }) => [desc(table.dueDate)],
+        })
+        return withTotals(rows)
     })
-    return withTotals(rows)
-}
 
-export const getInvoice = async (userId: string, invoiceId: string) => {
-    const invoice = await findOwnedInvoice(userId, invoiceId)
-    const [withTotal] = await withTotals([invoice])
-    const items = await db.query.transactions.findMany({
-        where: eq(transactions.invoiceId, invoiceId),
-        orderBy: (table, { asc }) => [asc(table.date), asc(table.createdAt)],
+export const getInvoice = (userId: string, invoiceId: string) =>
+    cached(userId, "invoice", invoiceId, async () => {
+        const invoice = await findOwnedInvoice(userId, invoiceId)
+        const [withTotal] = await withTotals([invoice])
+        const items = await db.query.transactions.findMany({
+            where: eq(transactions.invoiceId, invoiceId),
+            orderBy: (table, { asc }) => [asc(table.date), asc(table.createdAt)],
+        })
+        return { ...withTotal!, transactions: items }
     })
-    return { ...withTotal!, transactions: items }
-}
 
 export const payInvoice = async (userId: string, invoiceId: string, input: PayInvoiceInput) => {
     const invoice = await findOwnedInvoice(userId, invoiceId)

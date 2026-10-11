@@ -13,6 +13,7 @@ import {
 } from "fastify-type-provider-zod"
 import { z } from "zod"
 import { env } from "./env"
+import { invalidateUserCache } from "./lib/cache"
 import { handleError } from "./lib/errors"
 import { loggerOptions } from "./lib/logger"
 import { accountsRoutes } from "./modules/accounts/accounts.routes"
@@ -39,6 +40,13 @@ export const buildApp = async () => {
     // Rede de segurança pra erro que não passou pelo try/catch de um controller (ex: validação do schema da rota).
     app.setErrorHandler((error, req, reply) => handleError(reply, error, req))
     app.setNotFoundHandler((_req, reply) => reply.status(404).send({ success: false, message: "Rota não encontrada" }))
+
+    // Escrita autenticada bem-sucedida invalida o cache do usuário. onSend roda antes da resposta sair,
+    // então o próximo GET do client já enxerga a versão nova.
+    app.addHook("onSend", async (req, reply, payload) => {
+        if (req.method !== "GET" && req.user && reply.statusCode < 400) await invalidateUserCache(req.user.id)
+        return payload
+    })
 
     await app.register(cors, {
         origin: env.CORS_ORIGIN.split(",").map((origin) => origin.trim()),

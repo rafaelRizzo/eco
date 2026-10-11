@@ -40,6 +40,7 @@ Todas validadas com Zod no boot (`src/env.ts`); o servidor não sobe com valor i
 | `JWT_SECRET`, `JWT_EXPIRES_IN` | Assinatura e validade do token (`openssl rand -hex 32`) |
 | `SETUP_TOKEN` | Token pra criar o primeiro super admin (`openssl rand -hex 24`) |
 | `ALLOW_PUBLIC_SIGNUP` | `true`: qualquer um cria conta em `/register`; `false`: só o super admin cria usuários |
+| `REDIS_URL`, `CACHE_TTL_SECONDS` | Cache de relatórios no Redis (opcional: sem `REDIS_URL` lê direto do Postgres). TTL padrão 1h (escritas e crons invalidam na hora) |
 | `CORS_ORIGIN` | Origem(ns) do frontend, separadas por vírgula |
 | `APP_TIMEZONE` | Fuso dos crons e do conceito de "hoje" (padrão `America/Sao_Paulo`) |
 | `JOBS_ENABLED`, `JOBS_RUN_ON_BOOT` | Liga os crons / roda todos no boot pra recuperar janela perdida |
