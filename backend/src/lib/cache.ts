@@ -17,7 +17,13 @@ const reviveDates = (_key: string, value: unknown) =>
 const warn = (event: string, error: unknown) =>
     logger.warn({ event, error: error instanceof Error ? error.message : String(error) })
 
-export const cached = async <T>(userId: string, name: string, params: string, loader: () => Promise<T>): Promise<T> => {
+export const cached = async <T>(
+    userId: string,
+    name: string,
+    params: string,
+    loader: () => Promise<T>,
+    ttlSeconds = env.CACHE_TTL_SECONDS,
+): Promise<T> => {
     if (!redis) return loader()
 
     let key: string
@@ -33,7 +39,7 @@ export const cached = async <T>(userId: string, name: string, params: string, lo
 
     const value = await loader()
     try {
-        await redis.set(key, JSON.stringify(value), "EX", env.CACHE_TTL_SECONDS)
+        await redis.set(key, JSON.stringify(value), "EX", ttlSeconds)
     } catch (error) {
         warn("cache.write_failed", error)
     }
