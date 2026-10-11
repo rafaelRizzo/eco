@@ -10,6 +10,9 @@ const envSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3333),
     HOST: z.string().default("0.0.0.0"),
     LOG_ENABLED: booleanFromString.default(true),
+    // Nº de proxies confiáveis na frente da API (0 = nenhum). Cloudflare + Nginx Proxy Manager = 2: req.ip vira o IP real do cliente
+    // (rate limit por IP) e um X-Forwarded-For forjado pelo cliente não vale.
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
     LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
     DATABASE_URL: z.url(),
     DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),

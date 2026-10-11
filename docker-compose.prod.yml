@@ -1,0 +1,22 @@
+# Produção na VPS: só a API, na rede do Nginx Proxy Manager (que já faz o proxy/SSL com a Cloudflare). Banco no Supabase.
+# Uso: `docker compose -f docker-compose.prod.yml up -d --build`. Lê ./.env (NPM_NETWORK) e backend/.env (inclui DATABASE_URL do Supabase).
+# No NPM: Proxy Host -> Forward Hostname `eco-prod-api`, porta 3333, Websockets off, SSL da Cloudflare.
+name: eco-prod
+
+services:
+  api:
+    build: ./backend
+    container_name: eco-prod-api
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      NODE_ENV: production
+      # Cloudflare -> NPM -> API: 2 proxies confiáveis (req.ip = IP real do cliente).
+      TRUST_PROXY_HOPS: "2"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: ${NPM_NETWORK:-npm_default}
+    external: true

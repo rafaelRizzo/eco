@@ -32,7 +32,7 @@ import { transactionsRoutes } from "./modules/transactions/transactions.routes"
 import { usersRoutes } from "./modules/users/users.routes"
 
 export const buildApp = async () => {
-    const app = Fastify({ logger: loggerOptions })
+    const app = Fastify({ logger: loggerOptions, trustProxy: (_address, hop) => hop < env.TRUST_PROXY_HOPS })
 
     app.setValidatorCompiler(validatorCompiler)
     app.setSerializerCompiler(serializerCompiler)

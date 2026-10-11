@@ -11,12 +11,9 @@ Os dois projetos são independentes (cada um com seu `package.json`, sem workspa
 
 ## Início rápido
 
-Pré-requisitos: [Bun](https://bun.sh) 1.3+, [pnpm](https://pnpm.io) e Docker (ou um PostgreSQL acessível).
+Pré-requisitos: [Bun](https://bun.sh) 1.3+, [pnpm](https://pnpm.io) e um projeto no [Supabase](https://supabase.com) (ou outro PostgreSQL acessível).
 
 ```bash
-# 0. Banco (Postgres 18 em localhost:5432, user/senha postgres, db eco)
-docker compose up -d
-
 # 1. Backend
 cd backend
 bun install
@@ -125,6 +122,21 @@ Dentro de `backend/`:
 | `bun run db:migrate` | Aplica as migrations |
 | `bun run db:studio` | Drizzle Studio |
 | `bun run lint` / `bun run format` | Biome |
+
+## Deploy do backend (VPS)
+
+API via `docker-compose.prod.yml`, atrás do Nginx Proxy Manager (com Cloudflare na frente). Banco no Supabase.
+
+```bash
+cp .env.example .env                 # NPM_NETWORK (docker network ls)
+cp backend/.env.example backend/.env # DATABASE_URL do Supabase, segredos novos, CORS_ORIGIN do front
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec api bun run db:migrate
+```
+
+- No NPM: Proxy Host -> Forward Hostname `eco-prod-api`, porta `3333`.
+- `TRUST_PROXY_HOPS` é definido pelo compose (Cloudflare + NPM = 2 proxies confiáveis).
+- Deixe a origem acessível só pela Cloudflare, senão o IP do cliente (rate limit) pode ser forjado.
 
 ## Frontend
 
