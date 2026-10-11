@@ -11,9 +11,12 @@ Os dois projetos são independentes (cada um com seu `package.json`, sem workspa
 
 ## Início rápido
 
-Pré-requisitos: [Bun](https://bun.sh) 1.3+, [pnpm](https://pnpm.io) e um PostgreSQL acessível.
+Pré-requisitos: [Bun](https://bun.sh) 1.3+, [pnpm](https://pnpm.io) e Docker (ou um PostgreSQL acessível).
 
 ```bash
+# 0. Banco (Postgres 18 em localhost:5432, user/senha postgres, db eco)
+docker compose up -d
+
 # 1. Backend
 cd backend
 bun install

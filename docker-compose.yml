@@ -1,0 +1,32 @@
+# Postgres local de desenvolvimento (credenciais batem com backend/.env.example).
+# Uso: `docker compose up -d` na raiz do repo.
+name: eco
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: eco-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eco
+    ports:
+      - "5432:5432"
+    volumes:
+      - eco-db-data:/var/lib/postgresql
+    networks:
+      - eco-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d eco"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  eco-db-data:
+    name: eco-db-data
+
+networks:
+  eco-net:
+    name: eco-net

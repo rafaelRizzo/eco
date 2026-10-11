@@ -108,7 +108,7 @@ export function AppSidebar() {
                     <SidebarGroup key={group.label}>
                         <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
                         <SidebarGroupContent>
-                            <SidebarMenu>
+                            <SidebarMenu className="gap-1">
                                 {group.items.map(({ to, label, icon: Icon }) => {
                                     const active = pathname.startsWith(to)
                                     return (
