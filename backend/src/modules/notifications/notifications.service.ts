@@ -1,6 +1,7 @@
 // Regras de notificações: leitura pelo usuário + criação idempotente pelos crons (dedupe_key).
 import { and, count, desc, eq, isNull } from "drizzle-orm"
 import { notifications } from "../../db/schema"
+import { cached } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import type { NotificationQuery } from "./schemas/notification.schema"
@@ -17,23 +18,24 @@ export const notify = async (executor: DbOrTx, values: NewNotification) => {
     return created.length > 0
 }
 
-export const listNotifications = async (userId: string, query: NotificationQuery) => {
-    const [items, [unread]] = await Promise.all([
-        db.query.notifications.findMany({
-            where: and(
-                eq(notifications.userId, userId),
-                query.unread === true ? isNull(notifications.readAt) : undefined,
-            ),
-            orderBy: [desc(notifications.createdAt)],
-            limit: query.limit,
-        }),
-        db
-            .select({ value: count() })
-            .from(notifications)
-            .where(and(eq(notifications.userId, userId), isNull(notifications.readAt))),
-    ])
-    return { notifications: items, unreadCount: unread?.value ?? 0 }
-}
+export const listNotifications = (userId: string, query: NotificationQuery) =>
+    cached(userId, "notifications", JSON.stringify(query), async () => {
+        const [items, [unread]] = await Promise.all([
+            db.query.notifications.findMany({
+                where: and(
+                    eq(notifications.userId, userId),
+                    query.unread === true ? isNull(notifications.readAt) : undefined,
+                ),
+                orderBy: [desc(notifications.createdAt)],
+                limit: query.limit,
+            }),
+            db
+                .select({ value: count() })
+                .from(notifications)
+                .where(and(eq(notifications.userId, userId), isNull(notifications.readAt))),
+        ])
+        return { notifications: items, unreadCount: unread?.value ?? 0 }
+    })
 
 export const markAsRead = async (userId: string, notificationId: string) => {
     const [updated] = await db

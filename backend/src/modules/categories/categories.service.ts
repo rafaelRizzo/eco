@@ -1,6 +1,7 @@
 // Regras de categorias: CRUD escopado por usuário; excluir categoria deixa os lançamentos sem categoria.
 import { and, eq } from "drizzle-orm"
 import { categories } from "../../db/schema"
+import { cached } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import type { CategoryQuery, CreateCategoryInput, UpdateCategoryInput } from "./schemas/category.schema"
@@ -26,10 +27,12 @@ export const assertCategoryMatchesType = async (
 }
 
 export const listCategories = (userId: string, query: CategoryQuery) =>
-    db.query.categories.findMany({
-        where: and(eq(categories.userId, userId), query.type ? eq(categories.type, query.type) : undefined),
-        orderBy: (table, { asc }) => [asc(table.type), asc(table.name)],
-    })
+    cached(userId, "categories", query.type ?? "all", () =>
+        db.query.categories.findMany({
+            where: and(eq(categories.userId, userId), query.type ? eq(categories.type, query.type) : undefined),
+            orderBy: (table, { asc }) => [asc(table.type), asc(table.name)],
+        }),
+    )
 
 export const createCategory = async (userId: string, input: CreateCategoryInput) => {
     const [category] = await db

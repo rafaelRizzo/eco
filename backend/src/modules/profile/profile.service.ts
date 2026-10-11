@@ -2,6 +2,7 @@
 import { eq } from "drizzle-orm"
 import { userAvatars, users } from "../../db/schema"
 import { hashPassword, signAccessToken, verifyPassword } from "../../lib/auth"
+import { cached, invalidateAllCache } from "../../lib/cache"
 import { db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import { assertEmailAvailable, toPublicUser } from "../users/users.service"
@@ -14,7 +15,7 @@ const findUser = async (userId: string) => {
     return user
 }
 
-export const getProfile = async (userId: string) => toPublicUser(await findUser(userId))
+export const getProfile = (userId: string) => cached(userId, "profile", "me", async () => toPublicUser(await findUser(userId)))
 
 export const updateProfile = async (userId: string, input: UpdateProfileInput) => {
     const user = await findUser(userId)
@@ -48,6 +49,7 @@ export const updateProfile = async (userId: string, input: UpdateProfileInput) =
     }
 
     const [updated] = await db.update(users).set(changes).where(eq(users.id, userId)).returning()
+    await invalidateAllCache() // lista de /users mostra nome/e-mail
     return {
         user: toPublicUser(updated!),
         // Token novo só quando a senha mudou: o anterior (e o das outras sessões) é invalidado pelo middleware.
@@ -66,6 +68,7 @@ export const setAvatar = async (userId: string, input: UploadAvatarInput) => {
             .onConflictDoUpdate({ target: userAvatars.userId, set: { contentType: "image/webp", data, updatedAt: now } })
         await tx.update(users).set({ avatarUpdatedAt: now }).where(eq(users.id, userId))
     })
+    await invalidateAllCache()
 
     return now
 }
@@ -81,4 +84,5 @@ export const deleteAvatar = async (userId: string) => {
         await tx.delete(userAvatars).where(eq(userAvatars.userId, userId))
         await tx.update(users).set({ avatarUpdatedAt: null }).where(eq(users.id, userId))
     })
+    await invalidateAllCache()
 }

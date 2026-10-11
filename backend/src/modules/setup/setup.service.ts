@@ -7,6 +7,7 @@ import { env } from "../../env"
 import { hashPassword, signAccessToken, timingSafeEqualStrings } from "../../lib/auth"
 import { db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
+import { invalidateAllCache } from "../../lib/cache"
 import { assertEmailAvailable, createUserAccount, toPublicUser } from "../users/users.service"
 import type { CompleteSetupInput } from "./schemas/setup.schema"
 
@@ -40,6 +41,8 @@ export const completeSetup = async (input: CompleteSetupInput) => {
         await tx.update(systemSetup).set({ superAdminId: created.id }).where(eq(systemSetup.id, SYSTEM_SETUP_ID))
         return created
     })
+
+    await invalidateAllCache()
 
     // Já sai logado: o próximo passo natural é usar o app.
     return { token: signAccessToken(user.id), user: toPublicUser(user) }

@@ -5,6 +5,7 @@ import { type CreditCard, transactions } from "../../db/schema"
 import { env } from "../../env"
 import { splitInstallments } from "../../lib/billing"
 import { addMonths, monthRange, parseDate, todayIn } from "../../lib/dates"
+import { cached } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import { findOwnedAccount } from "../accounts/accounts.service"
@@ -51,23 +52,26 @@ export const insertCardTransaction = async (
 export const listTransactions = (userId: string, query: TransactionQuery) => {
     const range = query.month ? monthRange(query.month) : { start: query.from, end: query.to }
 
-    return db.query.transactions.findMany({
-        where: and(
-            eq(transactions.userId, userId),
-            range.start ? gte(transactions.date, range.start) : undefined,
-            range.end ? lte(transactions.date, range.end) : undefined,
-            query.type ? eq(transactions.type, query.type) : undefined,
-            query.status ? eq(transactions.status, query.status) : undefined,
-            query.categoryId ? eq(transactions.categoryId, query.categoryId) : undefined,
-            query.accountId ? eq(transactions.accountId, query.accountId) : undefined,
-            query.creditCardId ? eq(transactions.creditCardId, query.creditCardId) : undefined,
-            query.invoiceId ? eq(transactions.invoiceId, query.invoiceId) : undefined,
-        ),
-        orderBy: [desc(transactions.date), desc(transactions.createdAt)],
-    })
+    return cached(userId, "transactions", JSON.stringify(query), () =>
+        db.query.transactions.findMany({
+            where: and(
+                eq(transactions.userId, userId),
+                range.start ? gte(transactions.date, range.start) : undefined,
+                range.end ? lte(transactions.date, range.end) : undefined,
+                query.type ? eq(transactions.type, query.type) : undefined,
+                query.status ? eq(transactions.status, query.status) : undefined,
+                query.categoryId ? eq(transactions.categoryId, query.categoryId) : undefined,
+                query.accountId ? eq(transactions.accountId, query.accountId) : undefined,
+                query.creditCardId ? eq(transactions.creditCardId, query.creditCardId) : undefined,
+                query.invoiceId ? eq(transactions.invoiceId, query.invoiceId) : undefined,
+            ),
+            orderBy: [desc(transactions.date), desc(transactions.createdAt)],
+        }),
+    )
 }
 
-export const getTransaction = (userId: string, transactionId: string) => findOwnedTransaction(userId, transactionId)
+export const getTransaction = (userId: string, transactionId: string) =>
+    cached(userId, "transaction", transactionId, () => findOwnedTransaction(userId, transactionId))
 
 export const createTransaction = async (userId: string, input: CreateTransactionInput) => {
     await assertCategoryMatchesType(userId, input.categoryId, input.type)

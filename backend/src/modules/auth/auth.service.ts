@@ -3,6 +3,7 @@ import { eq, lt } from "drizzle-orm"
 import { revokedTokens, users } from "../../db/schema"
 import { env } from "../../env"
 import { hashPassword, signAccessToken, verifyPassword } from "../../lib/auth"
+import { cached, invalidateAllCache } from "../../lib/cache"
 import { db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import { isSetupCompleted } from "../setup/setup.service"
@@ -19,6 +20,7 @@ export const register = async (input: RegisterInput) => {
     const user = await db.transaction((tx) =>
         createUserAccount(tx, { name: input.name, email: input.email, passwordHash, role: "user" }),
     )
+    await invalidateAllCache() // lista de /users muda
 
     return { token: signAccessToken(user.id), user: toPublicUser(user) }
 }
@@ -34,11 +36,12 @@ export const login = async (input: LoginInput) => {
     return { token: signAccessToken(user.id), user: toPublicUser(user) }
 }
 
-export const getMe = async (userId: string) => {
-    const user = await db.query.users.findFirst({ where: eq(users.id, userId) })
-    if (!user) throw new AppError("Usuário não encontrado", 404)
-    return toPublicUser(user)
-}
+export const getMe = (userId: string) =>
+    cached(userId, "me", "me", async () => {
+        const user = await db.query.users.findFirst({ where: eq(users.id, userId) })
+        if (!user) throw new AppError("Usuário não encontrado", 404)
+        return toPublicUser(user)
+    })
 
 // Encerra só a sessão desta request: o jti entra na lista de revogados até o token expirar. Idempotente (chamar de novo
 // não falha). Token antigo sem jti não tem o que revogar; o front descarta do mesmo jeito.

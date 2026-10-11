@@ -2,6 +2,7 @@
 import { and, eq, ne, sql } from "drizzle-orm"
 import { categories, type User, users } from "../../db/schema"
 import { hashPassword } from "../../lib/auth"
+import { cached, invalidateAllCache } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import type { CreateUserInput, UpdateUserInput } from "./schemas/user.schema"
@@ -49,10 +50,12 @@ export const createUserAccount = async (
     return created
 }
 
-export const listUsers = async () => {
-    const rows = await db.query.users.findMany({ orderBy: (table, { asc }) => [asc(table.createdAt)] })
-    return rows.map(toPublicUser)
-}
+// Lista global (só super admin): chave "system", invalidada por qualquer escrita na tabela users (invalidateAllCache).
+export const listUsers = () =>
+    cached("system", "users", "all", async () => {
+        const rows = await db.query.users.findMany({ orderBy: (table, { asc }) => [asc(table.createdAt)] })
+        return rows.map(toPublicUser)
+    })
 
 export const createUser = async (input: CreateUserInput) => {
     await assertEmailAvailable(input.email)
@@ -60,6 +63,7 @@ export const createUser = async (input: CreateUserInput) => {
     const user = await db.transaction((tx) =>
         createUserAccount(tx, { name: input.name, email: input.email, passwordHash, role: input.role }),
     )
+    await invalidateAllCache()
     return toPublicUser(user)
 }
 
@@ -98,5 +102,6 @@ export const updateUser = async (actorId: string, userId: string, input: UpdateU
     }
 
     const [updated] = await db.update(users).set(changes).where(eq(users.id, userId)).returning()
+    await invalidateAllCache() // afeta /auth/me e /profile do alvo, além da lista
     return toPublicUser(updated!)
 }

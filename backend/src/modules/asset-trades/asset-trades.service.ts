@@ -1,6 +1,7 @@
 // Regras das operações: compra/venda nunca pode deixar a posição do ativo negativa (revalida o histórico inteiro).
 import { and, desc, eq } from "drizzle-orm"
 import { assetTrades, assets } from "../../db/schema"
+import { cached } from "../../lib/cache"
 import { type DbOrTx, db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import { computePosition, PositionError, type TradeLike } from "../../lib/investments"
@@ -55,16 +56,17 @@ const assertPosition = (trades: TradeLike[], message: string) => {
     }
 }
 
-export const listTrades = async (userId: string, assetId?: string) => {
-    if (assetId) await findOwnedAsset(userId, assetId)
-    const rows = await db
-        .select({ trade: assetTrades, ticker: assets.ticker, name: assets.name })
-        .from(assetTrades)
-        .innerJoin(assets, eq(assets.id, assetTrades.assetId))
-        .where(and(eq(assetTrades.userId, userId), assetId ? eq(assetTrades.assetId, assetId) : undefined))
-        .orderBy(desc(assetTrades.tradedAt), desc(assetTrades.createdAt))
-    return rows.map((row) => toView(row.trade, row))
-}
+export const listTrades = (userId: string, assetId?: string) =>
+    cached(userId, "asset-trades", assetId ?? "all", async () => {
+        if (assetId) await findOwnedAsset(userId, assetId)
+        const rows = await db
+            .select({ trade: assetTrades, ticker: assets.ticker, name: assets.name })
+            .from(assetTrades)
+            .innerJoin(assets, eq(assets.id, assetTrades.assetId))
+            .where(and(eq(assetTrades.userId, userId), assetId ? eq(assetTrades.assetId, assetId) : undefined))
+            .orderBy(desc(assetTrades.tradedAt), desc(assetTrades.createdAt))
+        return rows.map((row) => toView(row.trade, row))
+    })
 
 export const createTrade = async (userId: string, input: CreateAssetTradeInput) =>
     db.transaction(async (tx) => {

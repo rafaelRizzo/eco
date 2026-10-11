@@ -4,6 +4,7 @@ import { type RecurringTransaction, recurringTransactions, transactions } from "
 import { env } from "../../env"
 import { nextOccurrence } from "../../lib/billing"
 import { addDays, parseDate, todayIn } from "../../lib/dates"
+import { cached } from "../../lib/cache"
 import { db } from "../../lib/db"
 import { AppError } from "../../lib/errors"
 import { logger } from "../../lib/logger"
@@ -33,15 +34,18 @@ const fastForward = (recurring: RecurringTransaction, today: string) => {
 }
 
 export const listRecurringTransactions = (userId: string, query: RecurringTransactionQuery) =>
-    db.query.recurringTransactions.findMany({
-        where: and(
-            eq(recurringTransactions.userId, userId),
-            query.active !== undefined ? eq(recurringTransactions.active, query.active) : undefined,
-        ),
-        orderBy: (table, { asc }) => [asc(table.nextRunDate)],
-    })
+    cached(userId, "recurring-transactions", JSON.stringify(query), () =>
+        db.query.recurringTransactions.findMany({
+            where: and(
+                eq(recurringTransactions.userId, userId),
+                query.active !== undefined ? eq(recurringTransactions.active, query.active) : undefined,
+            ),
+            orderBy: (table, { asc }) => [asc(table.nextRunDate)],
+        }),
+    )
 
-export const getRecurringTransaction = findOwnedRecurringTransaction
+export const getRecurringTransaction = (userId: string, id: string) =>
+    cached(userId, "recurring-transaction", id, () => findOwnedRecurringTransaction(userId, id))
 
 export const createRecurringTransaction = async (userId: string, input: CreateRecurringTransactionInput) => {
     await assertCategoryMatchesType(userId, input.categoryId, input.type)
