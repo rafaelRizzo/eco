@@ -2,6 +2,10 @@
 
 MVP de controle de gastos pessoais: contas, cartões de crédito com faturas, compras parceladas, mensalidades/assinaturas recorrentes, lembretes de vencimento, resumo mensal por categoria e carteira de investimentos (ações, FIIs, cripto e dólar) com proventos.
 
+![Painel do Eco com resultado do mês, régua de vencimentos e próximos vencimentos](docs/screenshots/painel.png)
+
+![Tela de login do Eco](docs/screenshots/login.png)
+
 ```
 backend/    API (Bun + Fastify 5 + Drizzle + Postgres + Zod 4 + Scalar) + crons
 frontend/   SPA (Vite + React 19 + TanStack Router/Query + shadcn/ui + Tailwind v4 + Motion)
