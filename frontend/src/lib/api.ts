@@ -7,13 +7,25 @@ export const api = axios.create({
     timeout: 15_000,
 })
 
+// Endpoints que funcionam sem token (o resto da API é autenticada).
+const PUBLIC_ENDPOINTS = ["/auth/login", "/auth/register", "/setup"]
+
 api.interceptors.request.use((config) => {
     const token = getToken()
-    if (token) config.headers.Authorization = `Bearer ${token}`
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    } else if (!PUBLIC_ENDPOINTS.includes(config.url ?? "")) {
+        // Sem sessão (ex.: query que ainda estava montada durante o logout): nem sai pra rede, senão volta 401 "Não autenticado".
+        return Promise.reject(new axios.CanceledError("Sem sessão", undefined, config))
+    }
     return config
 })
 
 const PUBLIC_PATHS = ["/login", "/register", "/setup"]
+
+// Erro que não merece toast: requisição barrada por falta de sessão ou 401 (o interceptor já cuida de levar pro login).
+export const isSessionError = (error: unknown) =>
+    axios.isCancel(error) || (axios.isAxiosError(error) && error.response?.status === 401)
 
 api.interceptors.response.use(
     (response) => response,
